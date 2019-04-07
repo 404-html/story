@@ -1,8 +1,5 @@
 const formatFileSize = require('./formatFileSize.js');
-
-function sanitiseComment(comment) {
-    return comment.replace(/\n/g, '<br>');
-}
+const sanitiseComment = require('./sanitiseComment.js');
 
 function normalisePostData(post, isOp) {
     const normalisedPost = { isOp };
@@ -20,8 +17,8 @@ function normalisePostData(post, isOp) {
         if (post.filename) {
             normalisedPost.filename = `${post.filename}${post.ext}`;
             normalisedPost.fileSize = formatFileSize(post.fsize);
-            normalisedPost.fileSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.resto}/images/${post.tim}${post.ext}`;
-            normalisedPost.fileThumbSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.resto}/thumbs/${post.tim}s${post.ext}`;
+            normalisedPost.fileSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${isOp ? post.no : post.resto}/images/${post.tim}${post.ext}`;
+            normalisedPost.fileThumbSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${isOp ? post.no : post.resto}/thumbs/${post.tim}s${post.ext}`;
             normalisedPost.md5 = post.md5;
             normalisedPost.w = post.w;
             normalisedPost.h = post.h;
@@ -32,7 +29,9 @@ function normalisePostData(post, isOp) {
         // it's foolz-fuuka format
         normalisedPost.number = post.num;
         normalisedPost.threadNumber = post.thread_num;
-        normalisedPost.comment = sanitiseComment(post.comment);
+        if (post.comment) {
+            normalisedPost.comment = sanitiseComment(post.comment);
+        }
         normalisedPost.time = post.timestamp * 1000;
         normalisedPost.time4chanFormatted = post.fourchan_date;
         normalisedPost.id = post.poster_hash;
@@ -42,7 +41,7 @@ function normalisePostData(post, isOp) {
         if (post.media) {
             normalisedPost.filename = post.media.media_filename;
             normalisedPost.fileSize = formatFileSize(post.media.media_size);
-            normalisedPost.fileSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.thread_num}/images/${post.media.media}`;
+            normalisedPost.fileSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.thread_num}/images/${post.media.media_orig}`;
             normalisedPost.fileThumbSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.thread_num}/thumbs/${post.media.preview_orig}`;
             normalisedPost.md5 = post.media.media_hash;
             normalisedPost.w = post.media.media_w;

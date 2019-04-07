@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const { renderThreadAsHtml } = require('post-renderer');
 const normaliseThreadData = require('./normaliseThreadData.js');
 
 async function getThreadPaths(dir) {
@@ -9,6 +10,11 @@ async function getThreadPaths(dir) {
 
 async function exportPosts(threadData, dest) {
     return Promise.all(threadData.map(postData => fs.writeJson(path.join(dest, `${postData.number}.json`), postData, 'utf8')));
+}
+
+async function generateHtml(threadData, dest) {
+    const html = renderThreadAsHtml(threadData,'../css/yotsubluenew.652.css');
+    await fs.writeFile(path.join(dest, `${threadData[0].number}.html`), html, 'utf8');
 }
 
 async function processThreads(projectRoot) {
@@ -24,6 +30,7 @@ async function processThreads(projectRoot) {
         const threadData = normaliseThreadData(thread);
         await fs.writeJson(path.join(destThreads, path.basename(threadPath)), threadData, 'utf8');
         await exportPosts(threadData, destPosts);
+        await generateHtml(threadData, destThreads);
     }));
 }
 
