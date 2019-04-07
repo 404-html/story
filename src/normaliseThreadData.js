@@ -2,20 +2,25 @@ const normalisePostData = require('./normalisePostData.js');
 
 function normaliseThreadData(thread) {
     const normalisedThread = [];
+    let options = {};
     if (thread.posts) {
-        // 4chan format
-        normalisedThread.push(normalisePostData(thread.posts[0], true));
+        options.format = '4chan';
+        options.isOp = true;
+        normalisedThread.push(normalisePostData(thread.posts[0], options));
         for (const post of thread.posts.slice(1)) {
-            normalisedThread.push(normalisePostData(post));
+            options.isOp = false;
+            normalisedThread.push(normalisePostData(post, options));
         }
     } else {
-        // foolz-fuuka format
+        options.format = 'foolzFuuka';
         for (const threadId of Object.keys(thread)) {
             const op = thread[threadId].op;
-            normalisedThread.push(normalisePostData(op, true));
+            options.isOp = true;
+            normalisedThread.push(normalisePostData(op, options));
             for (const postId of Object.keys(thread[threadId].posts)) {
                 const post = thread[threadId].posts[postId];
-                normalisedThread.push(normalisePostData(post));
+                options.isOp = false;
+                normalisedThread.push(normalisePostData(post, options));
             }
         }
     }
