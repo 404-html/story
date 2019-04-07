@@ -1,7 +1,8 @@
 const formatFileSize = require('./formatFileSize.js');
 const sanitiseComment = require('./sanitiseComment.js');
 
-function normalise4chan(normalisedPost, post) {
+function normalise4chan(post, { isOp }) {
+    const normalisedPost = { isOp };
     normalisedPost.number = post.no;
     normalisedPost.threadNumber = post.resto;
     normalisedPost.comment = post.com;
@@ -22,9 +23,11 @@ function normalise4chan(normalisedPost, post) {
         normalisedPost.tn_w = post.tn_w;
         normalisedPost.tn_h = post.tn_h;
     }
+    return normalisedPost;
 }
 
-function normaliseFoolzFuuka(normalisedPost, post) {
+function normaliseFoolzFuuka(post, { isOp }) {
+    const normalisedPost = { isOp };
     normalisedPost.number = post.num;
     normalisedPost.threadNumber = post.thread_num;
     if (post.comment) {
@@ -47,21 +50,19 @@ function normaliseFoolzFuuka(normalisedPost, post) {
         normalisedPost.tn_w = post.media.preview_w;
         normalisedPost.tn_h = post.media.preview_h;
     }
+    return normalisedPost;
 }
 
-function normalisePostData(post, { isOp, format }) {
-    const normalisedPost = { isOp };
+function normalisePostData(post, options) {
+    const { format } = options;
     switch (format) {
         case '4chan':
-            normalise4chan(normalisedPost, post);
-            break;
+            return normalise4chan(post, options);
         case 'foolz-fuuka':
-            normaliseFoolzFuuka(normalisedPost, post);
-            break;
+            return normaliseFoolzFuuka(post, options);
         default:
             throw new Error(`Format unrecognised for post:\n${JSON.stringify(post, null, '\t')}`);
     }
-    return normalisedPost;
 }
 
 module.exports = normalisePostData;
