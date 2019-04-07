@@ -1,7 +1,11 @@
 const formatFileSize = require('./formatFileSize.js');
 
-function normalisePostData(post) {
-    const normalisedPost = {};
+function sanitiseComment(comment) {
+    return comment.replace(/\n/g, '<br>');
+}
+
+function normalisePostData(post, isOp) {
+    const normalisedPost = { isOp };
     if (post.com) {
         // it's in 4chan format
         normalisedPost.number = post.no;
@@ -11,6 +15,7 @@ function normalisePostData(post) {
         normalisedPost.time4chanFormatted = post.now;
         normalisedPost.id = post.id;
         normalisedPost.name = post.name;
+        normalisedPost.subject = post.sub;
         normalisedPost.trip = post.trip;
         if (post.filename) {
             normalisedPost.filename = `${post.filename}${post.ext}`;
@@ -27,11 +32,12 @@ function normalisePostData(post) {
         // it's foolz-fuuka format
         normalisedPost.number = post.num;
         normalisedPost.threadNumber = post.thread_num;
-        normalisedPost.comment = post.comment;
+        normalisedPost.comment = sanitiseComment(post.comment);
         normalisedPost.time = post.timestamp * 1000;
         normalisedPost.time4chanFormatted = post.fourchan_date;
         normalisedPost.id = post.poster_hash;
         normalisedPost.name = post.name;
+        normalisedPost.subject = post.title;
         normalisedPost.trip = post.trip;
         if (post.media) {
             normalisedPost.filename = post.media.media_filename;
