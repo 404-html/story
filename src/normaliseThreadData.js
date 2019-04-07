@@ -12,7 +12,7 @@ function normaliseThreadData(thread) {
             normalisedThread.push(normalisePostData(post, options));
         }
     } else {
-        options.format = 'foolzFuuka';
+        options.format = 'foolz-fuuka';
         for (const threadId of Object.keys(thread)) {
             const op = thread[threadId].op;
             options.isOp = true;
