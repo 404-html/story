@@ -45,7 +45,7 @@ async function updateThread(thread, dest) {
 }
 
 async function updateThreads(projectRoot = '.') {
-    const threadIndex = await fs.readJson(path.join(projectRoot, 'threads', 'index.json'));
+    const threadIndex = await fs.readJson(path.join(projectRoot, 'docs', 'threads', 'index.json'));
     const threadsPath = path.join(projectRoot, 'threadsRaw');
     const promises = [];
     threadIndex.main.forEach(thread => {

@@ -12,8 +12,8 @@ async function exportPosts(threadData, dest) {
 }
 
 async function processThreads(projectRoot) {
-    const destPosts = path.join(projectRoot, 'posts');
-    const destThreads = path.join(projectRoot, 'threads');
+    const destPosts = path.join(projectRoot, 'docs', 'posts');
+    const destThreads = path.join(projectRoot, 'docs', 'threads');
     await Promise.all([
         fs.ensureDir(destPosts),
         fs.ensureDir(destThreads)
