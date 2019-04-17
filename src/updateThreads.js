@@ -44,17 +44,14 @@ async function updateThread(thread, dest) {
     await fs.writeFile(path.join(dest, `${thread.threadId}.json`), data, 'utf8');
 }
 
-async function updateThreads(projectRoot = '.') {
+async function updateThreads(projectRoot = '.', threadIds = []) {
     const threadIndex = await fs.readJson(path.join(projectRoot, 'docs', 'threads', 'index.json'));
+    let threads = threadIndex.main.concat(threadIndex.side);
+    if (threadIds.length) {
+        threads = threads.filter(thread => threadIds.includes(thread.threadId));
+    }
     const threadsPath = path.join(projectRoot, 'threadsRaw');
-    const promises = [];
-    threadIndex.main.forEach(thread => {
-        promises.push(updateThread(thread, threadsPath));
-    });
-    threadIndex.side.forEach(thread => {
-        promises.push(updateThread(thread, threadsPath));
-    });
-    await Promise.all(promises);
+    await Promise.all(threads.map(thread => { return updateThread(thread, threadsPath); }));
 }
 
 module.exports = updateThreads;
