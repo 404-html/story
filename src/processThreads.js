@@ -22,25 +22,29 @@ async function generateHtml(threadData, dest) {
     await fs.writeFile(path.join(dest, `${threadData[0].number}.html`), html, 'utf8');
 }
 
-async function processThread(projectRoot, threadPath) {
+async function processThread(projectRoot, thread) {
     const destPosts = path.join(projectRoot, 'docs', 'posts');
     const destThreads = path.join(projectRoot, 'docs', 'threads');
     await Promise.all([
         fs.ensureDir(destPosts),
         fs.ensureDir(destThreads)
     ]);
-    const thread = await fs.readJSON(threadPath);
-    const threadData = normaliseThreadData(thread);
-    await fs.writeJson(path.join(destThreads, path.basename(threadPath)), threadData, 'utf8');
+    const threadHtml = await fs.readFile(path.join(projectRoot, 'threadsRaw', `${thread.threadId}.html`));
+    const threadData = normaliseThreadData(threadHtml, thread);
+    await fs.writeJson(path.join(destThreads, `${thread.threadId}.json`), threadData, 'utf8');
     await exportPosts(threadData, destPosts);
     await generateHtml(threadData, destThreads);
 }
 
 async function processThreads(projectRoot, threadIds = []) {
-    const threadPaths = await getThreadPaths(path.join(projectRoot, 'threadsRaw'), threadIds);
-    await Promise.all(threadPaths.map((threadPath) => {
-        return processThread(projectRoot, threadPath);
-    }));
+    const threadIndex = await fs.readJson(path.join(projectRoot, 'docs', 'threads', 'index.json'));
+    let threads = threadIndex.main.concat(threadIndex.side);
+    if (threadIds.length) {
+        threads = threads.filter(thread => threadIds.includes(`${thread.threadId}`));
+    }
+    for (const thread of threads) {
+        await processThread(projectRoot, thread);
+    }
 }
 
 module.exports = processThreads;

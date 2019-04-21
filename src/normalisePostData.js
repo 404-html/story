@@ -1,82 +1,91 @@
-const formatFileSize = require('./formatFileSize.js');
-const sanitiseComment = require('./sanitiseComment.js');
 const moment = require('moment-timezone');
-// const moment = require('moment');
+const getSuptgUrl = require('./getSuptgUrl.js');
 
 function get4chanTime(time) {
     return moment.tz(time, 'Europe/London').tz('America/New_York').format('MM/DD/YY(ddd)HH:mm:ss');
 }
 
-function normalise4chan(post, { isOp }) {
-    const normalisedPost = { isOp };
-    normalisedPost.number = post.no;
-    normalisedPost.threadNumber = post.resto || post.no; // resto is 0 if it's the op
-    normalisedPost.comment = post.com;
-    normalisedPost.time = post.time * 1000;
-    normalisedPost.time4chanFormatted = get4chanTime(post.time * 1000);
-    normalisedPost.id = post.id;
-    normalisedPost.name = post.name;
-    if (post.sub) {
-        normalisedPost.subject = post.sub;
+function addPostNumber(post, normalisedPost) {
+    const postnumMatch = post.id.match(/pc([0-9]+)/);
+    if (postnumMatch && typeof postnumMatch[1] === 'string') {
+        normalisedPost.number = parseInt(postnumMatch[1], 10);
+    } else {
+        throw new Error(`Couldn't find post number for:\n${post.outerHTML}`);
     }
-    if (post.trip) {
-        normalisedPost.trip = post.trip;
-    }
-    if (post.filename) {
-        normalisedPost.filename = `${post.filename}${post.ext}`;
-        normalisedPost.fileSize = formatFileSize(post.fsize);
-        normalisedPost.fileSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${isOp ? post.no : post.resto}/images/${post.tim}${post.ext}`;
-        normalisedPost.fileThumbSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${isOp ? post.no : post.resto}/thumbs/${post.tim}s${post.ext}`;
-        normalisedPost.md5 = post.md5;
-        normalisedPost.w = post.w;
-        normalisedPost.h = post.h;
-        normalisedPost.tn_w = post.tn_w;
-        normalisedPost.tn_h = post.tn_h;
-    }
-    return normalisedPost;
 }
 
-function normaliseFoolzFuuka(post, { isOp }) {
-    const normalisedPost = { isOp };
-    normalisedPost.number = parseInt(post.num, 10);
-    normalisedPost.threadNumber = parseInt(post.thread_num, 10);
-    if (post.comment) {
-        normalisedPost.comment = sanitiseComment(post.comment);
+function addPosterInfo(post, normalisedPost) {
+    const name = post.querySelector('.desktop .name');
+    if (name) {
+        normalisedPost.name = name.textContent;
+    } else {
+        throw new Error(`Couldn't find post name for:\n${post.outerHTML}`);
     }
-    normalisedPost.time = post.timestamp * 1000;
-    normalisedPost.time4chanFormatted = get4chanTime(post.timestamp * 1000);
-    normalisedPost.id = post.poster_hash;
-    normalisedPost.name = post.name;
-    if (post.title) {
-        normalisedPost.subject = post.title;
+    const postertrip = post.querySelector('.desktop .postertrip');
+    if (postertrip) {
+        normalisedPost.trip = postertrip.textContent;
     }
-    if (post.trip) {
-        normalisedPost.trip = post.trip;
+    const posteruid = post.querySelector('.desktop .posteruid');
+    if (posteruid) {
+        normalisedPost.id = posteruid.querySelector('.hand').textContent;
     }
-    if (post.media) {
-        normalisedPost.filename = post.media.media_filename;
-        normalisedPost.fileSize = formatFileSize(post.media.media_size);
-        normalisedPost.fileSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.thread_num}/images/${post.media.media_orig}`;
-        normalisedPost.fileThumbSrc = `http://suptg.thisisnotatrueending.com/qstarchive/${post.thread_num}/thumbs/${post.media.preview_orig}`;
-        normalisedPost.md5 = post.media.media_hash;
-        normalisedPost.w = parseInt(post.media.media_w, 10);
-        normalisedPost.h = parseInt(post.media.media_h, 10);
-        normalisedPost.tn_w = parseInt(post.media.preview_w, 10);
-        normalisedPost.tn_h = parseInt(post.media.preview_h, 10);
+}
+
+function addPostTime(post, normalisedPost) {
+    const dateTime = post.querySelector('.desktop .dateTime');
+    if (dateTime) {
+        const time = parseInt(dateTime.dataset.utc, 10) * 1000;
+        normalisedPost.time = time;
+        normalisedPost.time4chanFormatted = get4chanTime(time);
+    } else {
+        throw new Error(`Couldn't find post time for:\n${post.outerHTML}`);
     }
-    return normalisedPost;
+}
+
+function addPostSubject(post, normalisedPost) {
+    const subject = post.querySelector('.desktop .subject');
+    if (subject) {
+        normalisedPost.subject = subject.textContent;
+    }
+}
+
+function addPostMedia(post, normalisedPost, { board, threadId }) {
+    const file = post.querySelector('.file');
+    if (file) {
+        try {
+            const img = file.querySelector('img');
+            const fileText = file.querySelector('.fileText');
+            const fileThumb = file.querySelector('.fileThumb');
+            const nameLink = fileText.querySelector('a');
+            normalisedPost.filename = nameLink.title || nameLink.textContent;
+            normalisedPost.fileSize = img.alt;
+            normalisedPost.fileSrc = `${getSuptgUrl(board, threadId)}${fileThumb.href.replace(fileThumb.baseURI, '')}`;
+            normalisedPost.fileThumbSrc = `${getSuptgUrl(board, threadId)}${img.src.replace(img.baseURI, '')}`;
+            normalisedPost.md5 = img.dataset.md5;
+            const dimensionsMatch = fileText.textContent.match(/([0-9]+)x([0-9]+)/i);
+            normalisedPost.w = parseInt(dimensionsMatch[1], 10);
+            normalisedPost.h = parseInt(dimensionsMatch[2], 10);
+            normalisedPost.tn_w = parseInt(img.style.width, 10);
+            normalisedPost.tn_h = parseInt(img.style.height, 10);
+        } catch (err) {
+            console.log(post.outerHTML);
+            throw err;
+        }
+    }
+
 }
 
 function normalisePostData(post, options) {
-    const { format } = options;
-    switch (format) {
-        case '4chan':
-            return normalise4chan(post, options);
-        case 'foolz-fuuka':
-            return normaliseFoolzFuuka(post, options);
-        default:
-            throw new Error(`Format unrecognised for post:\n${JSON.stringify(post, null, '\t')}`);
-    }
+    const normalisedPost = {};
+    normalisedPost.isOp = post.classList.contains('opContainer');
+    normalisedPost.threadNumber = options.threadId;
+    addPostNumber(post, normalisedPost);
+    addPostSubject(post, normalisedPost);
+    addPosterInfo(post, normalisedPost);
+    addPostTime(post, normalisedPost);
+    normalisedPost.comment = post.querySelector('.postMessage').innerHTML;
+    addPostMedia(post, normalisedPost, options);
+    return normalisedPost;
 }
 
 module.exports = normalisePostData;
