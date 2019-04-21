@@ -13,8 +13,12 @@ async function trySuptg({ board, threadId }) {
 }
 
 async function try4chan({ board, threadId }) {
-    // TODO
-    return null;
+    try {
+        const response = await got(`https://boards.4chan.org/${board}/thread/${threadId}`);
+        return response.body;
+    } catch (error) {
+        return null;
+    }
 }
 
 async function updateThread(thread, dest) {
@@ -23,7 +27,7 @@ async function updateThread(thread, dest) {
         data = await try4chan(thread);
     }
     if (!data) {
-        throw new Error(`Unable to find JSON data for thread ${thread.board}/${thread.threadId}`);
+        throw new Error(`Unable to find data for thread ${thread.board}/${thread.threadId}`);
     }
     await fs.ensureDir(dest);
     await fs.writeFile(path.join(dest, `${thread.threadId}.html`), data, 'utf8');
