@@ -17,6 +17,8 @@
     "fs-extra": "^7.0.1",
     "got": "^9.6.0",
     "minimist": "^1.2.0",
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.25",
     "post-renderer": "git+https://github.com/bsoq/post-renderer.git"
   }
 }

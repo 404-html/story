@@ -5,6 +5,9 @@ const got = require('got');
 async function try4chan({ board, threadId }) {
     try {
         const response = await got(`https://a.4cdn.org/${board}/thread/${threadId}.json`);
+        if (JSON.parse(response.body).posts[0].archived) {
+            return null;
+        }
         return response.body;
     } catch (error) {
         return null;
@@ -48,7 +51,7 @@ async function updateThreads(projectRoot = '.', threadIds = []) {
     const threadIndex = await fs.readJson(path.join(projectRoot, 'docs', 'threads', 'index.json'));
     let threads = threadIndex.main.concat(threadIndex.side);
     if (threadIds.length) {
-        threads = threads.filter(thread => threadIds.includes(thread.threadId));
+        threads = threads.filter(thread => threadIds.includes(`${thread.threadId}`));
     }
     const threadsPath = path.join(projectRoot, 'threadsRaw');
     await Promise.all(threads.map(thread => { return updateThread(thread, threadsPath); }));
